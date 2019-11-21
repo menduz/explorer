@@ -17,27 +17,13 @@ public class FixSnapshots : MonoBehaviour
 
     private void Start()
     {
-        var wearables = WearableLiterals.DefaultWearables.GetDefaultWearables(WearableLiterals.BodyShapes.FEMALE).ToList();
-        var defaultModel =
-            new UserProfileModel()
-            {
-                name = "prueba",
-                userId = "prueba",
-                avatar =  new AvatarModel()
-                {
-                    bodyShape = WearableLiterals.BodyShapes.FEMALE,
-                    wearables = wearables,
-                    skinColor = new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f)),
-                    hairColor = new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f)),
-                    eyeColor = new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f)),
-                }
-            };
-        GetSnapshots(JsonUtility.ToJson(defaultModel));
+        GetSnapshots();
     }
 
-    public void GetSnapshots(string profileJson)
+    public void GetSnapshots()
     {
-        RetrieveSnapshots(JsonUtility.FromJson<UserProfileModel>(profileJson));
+        var userJson = File.ReadAllText($"{Application.dataPath}/../targetUser.json");
+        RetrieveSnapshots(JsonUtility.FromJson<UserProfileModel>(userJson));
     }
 
     private void RetrieveSnapshots(UserProfileModel model)
@@ -52,6 +38,7 @@ public class FixSnapshots : MonoBehaviour
 
                 File.WriteAllBytes(directory + "snapshot_face.png", face.EncodeToPNG());
                 File.WriteAllBytes(directory + "snapshot_body.png", body.EncodeToPNG());
+                Application.Quit();
             });
         });
     }
