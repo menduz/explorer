@@ -9,7 +9,7 @@ using Object = UnityEngine.Object;
 
 namespace DCL.Controllers
 {
-    public class ParcelScene : MonoBehaviour, ICleanable
+    public class ParcelScene : ICleanable
     {
         public static bool VERBOSE = false;
         enum State
@@ -57,13 +57,19 @@ namespace DCL.Controllers
         private readonly List<string> disposableNotReady = new List<string>();
         private bool flaggedToUnload = false;
         private bool isReleased = false;
+
+        public string name;
+
+        public GameObject gameObject;
+
         private State state = State.NOT_READY;
         public SceneBoundariesChecker boundariesChecker { private set; get; }
 
         private static GameObject blockerPrefab;
 
-        public void Awake()
+        public ParcelScene(GameObject gameObject)
         {
+            this.gameObject = gameObject;
             state = State.NOT_READY;
 
             if (blockerPrefab == null)
@@ -72,7 +78,7 @@ namespace DCL.Controllers
             // We need to manually create the Pool for empty game objects if it doesn't exist
             if (!PoolManager.i.ContainsPool(PARCEL_BLOCKER_POOL_NAME))
             {
-                GameObject go = Instantiate(blockerPrefab);
+                GameObject go = Object.Instantiate(blockerPrefab);
                 Pool pool = PoolManager.i.AddPool(PARCEL_BLOCKER_POOL_NAME, go);
                 pool.ForcePrewarm();
             }
@@ -90,7 +96,7 @@ namespace DCL.Controllers
         }
 
 
-        private void Update()
+        public void Update()
         {
             if (state == State.READY && RenderingController.i.renderingEnabled)
                 SendMetricsEvent();
@@ -186,7 +192,7 @@ namespace DCL.Controllers
 
                 PoolableObject blocker = PoolManager.i.Get(PARCEL_BLOCKER_POOL_NAME);
 
-                blocker.transform.SetParent(this.transform, false);
+                blocker.transform.SetParent(this.gameObject.transform, false);
                 blocker.transform.position = DCLCharacterController.i.characterPosition.WorldToUnityPosition(Utils.GridToWorldPosition(pos.x, pos.y)) + (Vector3.up * blockerPrefab.transform.localPosition.y) + new Vector3(ParcelSettings.PARCEL_SIZE / 2, 0, ParcelSettings.PARCEL_SIZE / 2);
 
                 float sceneHeight = metricsController.GetLimits().sceneHeight;
@@ -286,7 +292,7 @@ namespace DCL.Controllers
                 }
                 else
                 {
-                    Destroy(this.gameObject);
+                    Object.Destroy(this.gameObject);
                 }
             }
 
@@ -490,7 +496,7 @@ namespace DCL.Controllers
 
                 entities.Clear();
 
-                Destroy(this.gameObject);
+                Object.Destroy(this.gameObject);
             }
         }
 
@@ -692,13 +698,13 @@ namespace DCL.Controllers
         {
             if (entity == null)
             {
-                Debug.LogError($"Can't update the {type} uuid component of a nonexistent entity!", this);
+                Debug.LogError($"Can't update the {type} uuid component of a nonexistent entity!", gameObject);
                 return null;
             }
 
             if (!entity.uuidComponents.ContainsKey(type))
             {
-                Debug.LogError($"Entity {entity.entityId} doesn't have a {type} uuid component to update!", this);
+                Debug.LogError($"Entity {entity.entityId} doesn't have a {type} uuid component to update!", gameObject);
                 return null;
             }
 
@@ -714,13 +720,13 @@ namespace DCL.Controllers
         {
             if (entity == null)
             {
-                Debug.LogError($"Can't update the {classId} component of a nonexistent entity!", this);
+                Debug.LogError($"Can't update the {classId} component of a nonexistent entity!", gameObject);
                 return null;
             }
 
             if (!entity.components.ContainsKey(classId))
             {
-                Debug.LogError($"Entity {entity.entityId} doesn't have a {classId} component to update!", this);
+                Debug.LogError($"Entity {entity.entityId} doesn't have a {classId} component to update!", gameObject);
                 return null;
             }
 

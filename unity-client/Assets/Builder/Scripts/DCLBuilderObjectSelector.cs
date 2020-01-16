@@ -1,7 +1,7 @@
-﻿using UnityEngine;
-using DCL.Controllers;
 using Builder.Gizmos;
+using DCL.Controllers;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Builder
 {
@@ -399,7 +399,7 @@ namespace Builder
 
         private void SelectionParentRemoveEntity(Transform entityTransform)
         {
-            entityTransform.SetParent(currentScene.transform, true);
+            entityTransform.SetParent(currentScene.gameObject.transform, true);
         }
 
         private void SelectionParentRemoveAllEntities()

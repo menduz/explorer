@@ -40,10 +40,8 @@ namespace DCL
 
         public bool deferredMessagesDecoding = false;
         Queue<string> payloadsToDecode = new Queue<string>();
-        const float MAX_TIME_FOR_DECODE = 0.1f;
-        const float MIN_TIME_FOR_DECODE = 0.001f;
-        float maxTimeForDecode = MAX_TIME_FOR_DECODE;
-        float secsPerThousandMsgs = 0.01f;
+
+        const float MAX_TIME_FOR_DECODE = 0.005f;
 
 
         #region BENCHMARK_EVENTS
@@ -191,6 +189,17 @@ namespace DCL
             PrioritizeMessageControllerList();
 
             MessagingControllersManager.i.UpdateThrottling();
+
+            if (loadedScenes.Count > 0)
+            {
+                using (var iterator = loadedScenes.GetEnumerator())
+                {
+                    while (iterator.MoveNext())
+                    {
+                        iterator.Current.Value.Update();
+                    }
+                }
+            }
         }
 
         private void PrioritizeMessageControllerList(bool force = false)
@@ -217,17 +226,17 @@ namespace DCL
         }
         private int SceneMessagingSortByDistance(ParcelScene sceneA, ParcelScene sceneB)
         {
-            if (sceneA == null || sceneA.transform == null)
+            if (sceneA == null || sceneA.gameObject.transform == null)
                 return int.MinValue;
-            if (sceneB == null || sceneB.transform == null)
+            if (sceneB == null || sceneB.gameObject.transform == null)
                 return int.MaxValue;
 
-            sortAuxiliaryVector.x = (int)sceneA.transform.position.x;
-            sortAuxiliaryVector.y = (int)sceneA.transform.position.z;
+            sortAuxiliaryVector.x = (int)sceneA.gameObject.transform.position.x;
+            sortAuxiliaryVector.y = (int)sceneA.gameObject.transform.position.z;
             int dist1 = (sortAuxiliaryVector - currentGridSceneCoordinate).sqrMagnitude;
 
-            sortAuxiliaryVector.x = (int)sceneB.transform.position.x;
-            sortAuxiliaryVector.y = (int)sceneB.transform.position.z;
+            sortAuxiliaryVector.x = (int)sceneB.gameObject.transform.position.x;
+            sortAuxiliaryVector.y = (int)sceneB.gameObject.transform.position.z;
             int dist2 = (sortAuxiliaryVector - currentGridSceneCoordinate).sqrMagnitude;
 
             return dist1 - dist2;
@@ -249,7 +258,7 @@ namespace DCL
             {
                 var newGameObject = new GameObject("UI Scene - " + uiSceneId);
 
-                var newScene = newGameObject.AddComponent<GlobalScene>();
+                var newScene = new GlobalScene(newGameObject);
                 newScene.ownerController = this;
                 newScene.unloadWithDistance = false;
                 newScene.isPersistent = true;
@@ -370,7 +379,7 @@ namespace DCL
             {
                 var newGameObject = new GameObject("New Scene");
 
-                var newScene = newGameObject.AddComponent<ParcelScene>();
+                var newScene = new ParcelScene(newGameObject);
                 newScene.SetData(sceneToLoad);
 
                 if (isDebugMode)
@@ -416,7 +425,7 @@ namespace DCL
             {
                 var newGameObject = new GameObject("New Scene");
 
-                var newScene = newGameObject.AddComponent<ParcelScene>();
+                var newScene = new ParcelScene(newGameObject);
                 newScene.SetData(sceneToLoad);
 
                 if (isDebugMode)
@@ -466,7 +475,7 @@ namespace DCL
             if (MessagingControllersManager.i.ContainsController(scene.sceneData.id))
                 MessagingControllersManager.i.RemoveController(scene.sceneData.id);
 
-            if (scene)
+            if (scene != null)
             {
                 scene.Cleanup();
 
@@ -580,27 +589,24 @@ namespace DCL
         private IEnumerator DeferredDecoding()
         {
             float lastTimeDecoded = Time.realtimeSinceStartup;
+            float maxTimeForDecode = MAX_TIME_FOR_DECODE;
 
             while (true)
             {
+                maxTimeForDecode = RenderingController.i.renderingEnabled ? MAX_TIME_FOR_DECODE : float.MaxValue;
+
                 if (payloadsToDecode.Count > 0)
                 {
                     string payload = payloadsToDecode.Dequeue();
 
                     DecodeAndEnqueue(payload);
 
-                    if (Time.realtimeSinceStartup - lastTimeDecoded >= maxTimeForDecode)
-                    {
-                        yield return null;
-                        maxTimeForDecode = Mathf.Clamp(MIN_TIME_FOR_DECODE + (float)payloadsToDecode.Count / 1000.0f * secsPerThousandMsgs, MIN_TIME_FOR_DECODE, MAX_TIME_FOR_DECODE);
-                        lastTimeDecoded = Time.realtimeSinceStartup;
-                    }
+                    if (Time.realtimeSinceStartup - lastTimeDecoded < maxTimeForDecode)
+                        continue;
                 }
-                else
-                {
-                    yield return null;
-                    lastTimeDecoded = Time.unscaledTime;
-                }
+
+                yield return null;
+                lastTimeDecoded = Time.unscaledTime;
             }
         }
 
@@ -798,7 +804,8 @@ namespace DCL
             }
 
             var go = new GameObject();
-            var newScene = go.AddComponent<ParcelScene>();
+
+            var newScene = new ParcelScene(go);
             newScene.ownerController = this;
             newScene.isTestScene = true;
             newScene.useBlockers = false;

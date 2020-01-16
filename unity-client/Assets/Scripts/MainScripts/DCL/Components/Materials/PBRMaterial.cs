@@ -1,4 +1,4 @@
-﻿using DCL.Controllers;
+using DCL.Controllers;
 using DCL.Helpers;
 using DCL.Models;
 using System.Collections;
@@ -107,7 +107,7 @@ namespace DCL.Components
                 // FETCH AND LOAD EMISSIVE TEXTURE
                 if (!string.IsNullOrEmpty(model.emissiveTexture))
                 {
-                    scene.StartCoroutine(DCLTexture.FetchFromComponent(scene, model.emissiveTexture,
+                    CoroutineStarter.Start(DCLTexture.FetchFromComponent(scene, model.emissiveTexture,
                         (fetchedEmissiveTexture) =>
                         {
                             material.SetTexture("_EmissionMap", fetchedEmissiveTexture);
@@ -124,7 +124,7 @@ namespace DCL.Components
             // FETCH AND LOAD TEXTURES
             if (!string.IsNullOrEmpty(model.albedoTexture))
             {
-                scene.StartCoroutine(DCLTexture.FetchFromComponent(scene, model.albedoTexture,
+                CoroutineStarter.Start(DCLTexture.FetchFromComponent(scene, model.albedoTexture,
                     (fetchedAlbedoTexture) =>
                     {
                         material.SetTexture("_BaseMap", fetchedAlbedoTexture);
@@ -137,7 +137,7 @@ namespace DCL.Components
 
             if (!string.IsNullOrEmpty(model.bumpTexture))
             {
-                scene.StartCoroutine(DCLTexture.FetchFromComponent(scene, model.bumpTexture,
+                CoroutineStarter.Start(DCLTexture.FetchFromComponent(scene, model.bumpTexture,
                     (fetchedBumpTexture) =>
                     {
                         material.SetTexture("_BumpMap", fetchedBumpTexture);

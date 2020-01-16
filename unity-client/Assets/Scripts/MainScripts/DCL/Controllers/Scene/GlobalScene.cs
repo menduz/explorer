@@ -1,10 +1,14 @@
-﻿using DCL.Models;
+using DCL.Models;
 using UnityEngine;
 
 namespace DCL.Controllers
 {
     public class GlobalScene : ParcelScene
     {
+        public GlobalScene(GameObject gameObject) : base(gameObject)
+        {
+        }
+
         protected override string prettyName => "ui-scene";
 
         public override bool IsInsideSceneBoundaries(Vector3 worldPosition, float height = 0f)

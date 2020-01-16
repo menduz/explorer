@@ -1,4 +1,4 @@
-﻿using DCL.Controllers;
+using DCL.Controllers;
 using DCL.Helpers;
 using DCL.Models;
 using System.Collections;
@@ -48,7 +48,7 @@ namespace DCL.Components
             {
                 if (fetchRoutine != null)
                 {
-                    scene.StopCoroutine(fetchRoutine);
+                    GetCoroutineOwner().StopCoroutine(fetchRoutine);
                     fetchRoutine = null;
                 }
 
@@ -58,7 +58,7 @@ namespace DCL.Components
                     fetchRoutine = null;
                 });
 
-                fetchRoutine = scene.StartCoroutine(fetchIEnum);
+                fetchRoutine = GetCoroutineOwner().StartCoroutine(fetchIEnum);
             }
             else
             {

@@ -1,4 +1,4 @@
-﻿using DCL.Controllers;
+using DCL.Controllers;
 using DCL.Models;
 using System;
 using System.Collections;
@@ -15,7 +15,6 @@ namespace DCL.Components
         IEnumerator ApplyChanges(string newJson);
         void RaiseOnAppliedChanges();
 
-        MonoBehaviour GetCoroutineOwner();
         ComponentUpdateHandler CreateUpdateHandler();
     }
 

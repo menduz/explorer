@@ -1,4 +1,4 @@
-﻿using DCL.Configuration;
+using DCL.Configuration;
 using DCL.Controllers;
 using DCL.Helpers;
 using DCL.Models;
@@ -132,7 +132,7 @@ namespace DCL.Components
 
             GameObject canvasGameObject = new GameObject("UIScreenSpace");
             canvasGameObject.layer = LayerMask.NameToLayer("UI");
-            canvasGameObject.transform.SetParent(scene.transform);
+            canvasGameObject.transform.SetParent(scene.gameObject.transform);
             canvasGameObject.transform.ResetLocalTRS();
 
             // Canvas

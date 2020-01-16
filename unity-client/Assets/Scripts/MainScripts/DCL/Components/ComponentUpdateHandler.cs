@@ -1,4 +1,4 @@
-﻿using DCL.Components;
+using DCL.Components;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;

@@ -129,7 +129,7 @@ namespace DCL
             QueueMode queueMode = QueueMode.Reliable;
 
             // If current scene is the Global Scene, the bus id should be UI
-            if (scene && scene.sceneData.id == SceneController.i.GlobalSceneId)
+            if (scene != null && scene.sceneData.id == SceneController.i.GlobalSceneId)
             {
                 busId = MessagingBusId.UI;
             }
@@ -145,11 +145,9 @@ namespace DCL
             // Check if the message type is an UpdateEntityComponent 
             if (queuedMessage.method == MessagingTypes.ENTITY_COMPONENT_CREATE_OR_UPDATE)
             {
-                int classId = 0;
-
                 // We need to extract the entityId and the classId from the tag.
                 // The tag format is "entityId_classId", i.e: "E1_2". 
-                GetEntityIdAndClassIdFromTag(queuedMessage.tag, out classId);
+                GetEntityIdAndClassIdFromTag(queuedMessage.tag, out int classId);
 
                 // If it is a transform update, the queue mode is Lossy
                 if (classId == (int)CLASS_ID_COMPONENT.TRANSFORM)

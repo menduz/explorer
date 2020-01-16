@@ -1,4 +1,4 @@
-﻿using DCL.Models;
+using DCL.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -101,7 +101,7 @@ namespace DCL.Components
 
         public MonoBehaviour GetCoroutineOwner()
         {
-            return scene;
+            return SceneController.i;
         }
 
         public virtual ComponentUpdateHandler CreateUpdateHandler()

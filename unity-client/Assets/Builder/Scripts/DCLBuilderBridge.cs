@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using DCL;
@@ -166,7 +166,7 @@ namespace Builder
             DCLCharacterController.i?.gameObject.SetActive(false);
             outOfBoundariesEntitiesId.Clear();
 
-            if (currentScene)
+            if (currentScene != null)
             {
                 currentScene.OnEntityAdded -= OnEntityIsAdded;
                 currentScene.OnEntityRemoved -= OnEntityIsRemoved;
@@ -526,7 +526,7 @@ namespace Builder
         private void SetCurrentScene()
         {
             currentScene = GetLoadedScene();
-            if (currentScene)
+            if (currentScene != null)
             {
                 currentScene.OnEntityAdded += OnEntityIsAdded;
                 currentScene.OnEntityRemoved += OnEntityIsRemoved;
