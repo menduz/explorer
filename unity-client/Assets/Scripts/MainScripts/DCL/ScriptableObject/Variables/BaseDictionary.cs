@@ -23,7 +23,7 @@ public class BaseDictionary<TKey, TValue> : ScriptableObject
         remove => OnRemovedElementValue -= value;
     }
 
-    private Dictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>();
+    public Dictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>();
 
     public void Add(TKey newKey, TValue newValue)
     {
