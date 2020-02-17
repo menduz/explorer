@@ -108,8 +108,11 @@ function CachedXMLHttpRequest() {
         cache.statusText = "OK";
         cache.response = result.response;
         cache.responseURL = result.meta.responseURL;
-        if (window.location.href.lastIndexOf(absoluteUrlMatch[0], 0))
-          return revalidateCrossOriginRequest(result.meta, self, sendArguments);
+        if (window.location.href.lastIndexOf(absoluteUrlMatch[0], 0)) {
+          if (!absoluteUrlMatch.includes('/Qm')) {
+            return revalidateCrossOriginRequest(result.meta, self, sendArguments);
+          }
+        }
         if (result.meta.lastModified)
           xhr.setRequestHeader("If-Modified-Since", result.meta.lastModified);
         else if (result.meta.eTag)
