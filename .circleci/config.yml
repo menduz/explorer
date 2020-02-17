@@ -442,7 +442,6 @@ workflows:
           requires:
             - build-kernel
             - build-unity
-            - run-unity-tests
           filters:
             branches:
               only: /(.*)/
