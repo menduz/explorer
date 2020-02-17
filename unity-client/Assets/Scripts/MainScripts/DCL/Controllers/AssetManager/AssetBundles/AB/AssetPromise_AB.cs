@@ -123,8 +123,6 @@ namespace DCL
             UnregisterConcurrentRequest();
         }
 
-        UnityWebRequest assetBundleRequest;
-
         IEnumerator LoadAssetBundle(string finalUrl, Action OnSuccess, Action OnFail)
         {
             if (failedRequestUrls.Contains(finalUrl))

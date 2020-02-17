@@ -6,7 +6,6 @@ import { Eth } from 'web3x/eth'
 import { Personal } from 'web3x/personal/personal'
 import {
   ETHEREUM_NETWORK,
-  getDefaultTLD,
   getLoginConfigurationForCurrentDomain,
   getTLD,
   PREVIEW,
@@ -19,8 +18,8 @@ import './apis/index'
 import { connect, disconnect, persistCurrentUser } from './comms'
 import { ConnectionEstablishmentError, IdTakenError } from './comms/interface/types'
 import { isMobile } from './comms/mobile'
-import { getUserProfile, removeUserProfile, setLocalProfile } from './comms/peers'
-import { realmInitialized, initializeUrlRealmObserver } from './dao'
+import { getUserProfile, setLocalProfile } from './comms/peers'
+import { initializeUrlRealmObserver, realmInitialized } from './dao'
 import { web3initialized } from './dao/actions'
 import { getNetwork } from './ethereum/EthereumService'
 import { awaitWeb3Approval, isSessionExpired, providerFuture } from './ethereum/provider'
@@ -226,21 +225,6 @@ export async function initShared(): Promise<Session | undefined> {
     defaultLogger.log(`Using test user.`)
     userId = '0x0000000000000000000000000000000000000000'
     identity = await createAuthIdentity()
-  }
-
-  if (WORLD_EXPLORER && getDefaultTLD() === 'org') {
-    try {
-      const response = await fetch(
-        `https://s7bdh0k6x3.execute-api.us-east-1.amazonaws.com/default/whitelisted_users?id=${identity.address}`
-      )
-      if (!response.ok) {
-        throw new Error('unauthorized user')
-      }
-    } catch (e) {
-      removeUserProfile()
-      console['groupEnd']()
-      throw new Error(AUTH_ERROR_LOGGED_OUT)
-    }
   }
 
   defaultLogger.log(`User ${userId} logged in`)
