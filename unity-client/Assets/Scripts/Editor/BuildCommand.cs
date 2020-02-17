@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Hbx.WebGL;
 using UnityEditor;
 
 static class BuildCommand
@@ -147,6 +148,7 @@ static class BuildCommand
 
         BuildPipeline.BuildPlayer(GetEnabledScenes(), fixedBuildPath, buildTarget, GetBuildOptions());
         Console.WriteLine(":: Build complete");
+        WebGLRetinaTools.RetinaFixLastBuild();
         Console.WriteLine(":: Applied Retina fix");
         Console.WriteLine(":: Done with build process");
     }
