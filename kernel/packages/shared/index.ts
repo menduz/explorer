@@ -154,7 +154,7 @@ async function checkTldVsNetwork() {
   return false
 }
 
-export async function initShared(): Promise<Session | undefined> {
+export async function initShared(): Promise<void> {
   if (WORLD_EXPLORER) {
     await initializeAnalytics()
   }
@@ -175,6 +175,10 @@ export async function initShared(): Promise<Session | undefined> {
   }
 
   store.dispatch(notStarted())
+}
+
+export async function initProfileAndComms(): Promise<Session | undefined> {
+  const store: Store<RootState> = window.globalStore
 
   const session = new Session()
 

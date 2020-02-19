@@ -1,6 +1,6 @@
 import future from 'fp-future'
 import { DEBUG_MESSAGES } from '../config'
-import { initShared } from '../shared'
+import { initShared, initProfileAndComms } from '../shared'
 import { ReportFatalError } from '../shared/loading/ReportFatalError'
 import { defaultLogger } from '../shared/logger'
 import { initializeEngine } from './dcl'
@@ -44,11 +44,19 @@ export async function initializeUnity(
   container: HTMLElement,
   buildConfigPath: string = 'unity/Build/unity.json'
 ): Promise<InitializeUnityResult> {
-  const session = await initShared()
-  if (!session) {
-    throw new Error()
-  }
-  Session.current.resolve(session)
+  await initShared()
+
+  initProfileAndComms().then(
+    session => {
+      if (session) {
+        Session.current.resolve(session)
+      }
+    },
+    e => {
+      // TODO: ReportFatalError?
+    }
+  )
+
   const qs = queryString.parse(document.location.search)
 
   preventUnityKeyboardLock()
