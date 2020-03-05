@@ -3,15 +3,6 @@ import { tutorialStepId } from 'shared/tutorial/steps'
 const queryString = require('query-string')
 declare var window: any
 
-export const performanceConfigurations = [
-  { antialiasing: true, downsampling: 0, shadows: true },
-  { antialiasing: false, downsampling: 1, shadows: true },
-  { antialiasing: false, downsampling: 1, shadows: false },
-  { antialiasing: false, downsampling: 1, shadows: true },
-  { antialiasing: false, downsampling: 2, shadows: false }
-]
-
-export const NETWORK_HZ = 10
 
 export namespace interactionLimits {
   /**
@@ -49,16 +40,6 @@ export namespace parcelLimits {
   export const maxZ = 3000
   export const minX = -3000
   export const minZ = -3000
-
-  export const maxParcelX = 150
-  export const maxParcelZ = 150
-  export const minParcelX = -150
-  export const minParcelZ = -150
-
-  export const minLandCoordinateX = -150
-  export const minLandCoordinateY = -150
-  export const maxLandCoordinateX = 150
-  export const maxLandCoordinateY = 150
 }
 
 export namespace playerConfigurations {
@@ -74,14 +55,6 @@ export namespace playerConfigurations {
   export const angularSensibility = 500
 }
 
-export namespace visualConfigurations {
-  export const fieldOfView = 75
-  export const farDistance = parcelLimits.visibleRadius * parcelLimits.parcelSize
-
-  export const near = 0.08
-  export const far = farDistance
-}
-
 // Entry points
 export const PREVIEW: boolean = !!(global as any).preview
 export const EDITOR: boolean = !!(global as any).isEditor
@@ -92,7 +65,6 @@ export const OPEN_AVATAR_EDITOR = location.search.indexOf('OPEN_AVATAR_EDITOR') 
 export const STATIC_WORLD = location.search.indexOf('STATIC_WORLD') !== -1 || !!(global as any).staticWorld || EDITOR
 
 // Development
-export const ENABLE_WEB3 = location.search.indexOf('ENABLE_WEB3') !== -1 || !!(global as any).enableWeb3
 export const ENV_OVERRIDE = location.search.indexOf('ENV') !== -1
 
 const qs = queryString.parse(location.search)
@@ -164,31 +136,11 @@ export namespace commConfigurations {
       urls: 'stun:stun2.l.google.com:19302'
     },
     {
-      urls: 'stun:stun3.l.google.com:19302'
-    },
-    {
-      urls: 'stun:stun4.l.google.com:19302'
-    },
-    {
       urls: 'turn:stun.decentraland.org:3478',
       credential: 'passworddcl',
       username: 'usernamedcl'
     }
   ]
-}
-export const loginConfig = {
-  org: {
-    domain: 'decentraland.auth0.com',
-    client_id: 'yqFiSmQsxk3LK46JOIB4NJ3wK4HzZVxG'
-  },
-  today: {
-    domain: 'dcl-stg.auth0.com',
-    client_id: '0UB0I7w6QA3AgSvbXh9rGvDuhKrJV1C0'
-  },
-  zone: {
-    domain: 'dcl-test.auth0.com',
-    client_id: 'lTUEMnFpYb0aiUKeIRPbh7pBxKM6sccx'
-  }
 }
 
 // take address from http://contracts.decentraland.org/addresses.json

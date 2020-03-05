@@ -1,0 +1,28 @@
+digraph G {
+  "Configure Error UI" -> Init;
+  "Configure Analytics" -> Init;
+  Init -> "Load Unity";
+  "DAO List" -> "Setup Comms";
+  "DAO List" -> "Pick Fastest Content Server";
+  Init -> "Setup CurrentUser\n(web3, storage)";
+  Init -> "Setup Scene And Content Data Source";
+  "Pick Fastest Content Server" -> "Setup Scene And Content Data Source";
+  "Setup Scene And Content Data Source" -> "Pick Fastest Content Server";
+  "Setup Scene And Content Data Source" -> "Setup CurrentUser\n(web3, storage)";
+  "Setup CurrentUser\n(web3, storage)" -> "Select starting parcel";
+  "Setup CurrentUser\n(web3, storage)" -> "Setup Comms";
+  "Select starting parcel" -> "Load initial scenes";
+  "Load initial scenes" -> "Select and set spawn point";
+  "Select and set spawn point" -> "Await for all scenes to load";
+  "Await for all scenes to load" -> "Start\n(Rendering Signal)"
+  "Setup Script\nWorkers" -> "Load initial scenes";
+  "Setup Script\nWorkers" -> "Start\n(Rendering Signal)";
+  "Setup Scene And Content Data Source" -> "Setup Minimap Info";
+  "Setup Minimap Info" -> "Start\n(Rendering Signal)";
+  "Setup Scene And Content Data Source" -> "Configure Scene Messages";
+  "Setup Scene And Content Data Source" -> "Setup Script\nWorkers";
+  "Load Unity" -> "Configure Scene Messages";
+  "Configure Scene Messages" -> "Start\n(Rendering Signal)";
+  "Configure Scene Messages" -> "Load initial scenes";
+  "Setup Comms" -> "Start\n(Rendering Signal)";
+}
