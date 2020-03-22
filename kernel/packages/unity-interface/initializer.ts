@@ -94,6 +94,26 @@ function preventUnityKeyboardLock() {
   }
 }
 
+let bandwidth: {
+  incoming: number
+  outgoing: number
+  outMessages: {
+    t: number
+    m: string[]
+  }[]
+  inMessages: {
+    t: number
+    m: string[]
+  }[]
+} = (global['_bandwidth'] = {
+  incoming: 0,
+  outgoing: 0,
+  outMessages: [],
+  inMessages: []
+})
+setInterval(() => {
+  console.log(`Incoming: ${bandwidth.incoming}; Out: ${bandwidth.outgoing}`)
+}, 1000)
 namespace DCL {
   // This function get's called by the engine
   export function EngineStarted() {
@@ -112,6 +132,11 @@ namespace DCL {
   }
 
   export function MessageFromEngine(type: string, jsonEncodedMessage: string) {
+    bandwidth.incoming += jsonEncodedMessage.length
+    bandwidth.inMessages.push({
+      t: new Date().getTime(),
+      m: [type, jsonEncodedMessage]
+    })
     if (_instancedJS) {
       if (type === 'PerformanceReport') {
         _instancedJS.then($ => $.onMessage(type, jsonEncodedMessage)).catch(e => defaultLogger.error(e.message))

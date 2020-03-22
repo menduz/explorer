@@ -5637,6 +5637,16 @@ var UnityLoader = UnityLoader || {
         if (i.Module.SetFullscreen) return i.Module.SetFullscreen.apply(i.Module, arguments)
       },
       SendMessage: function () {
+        if (arguments.length === 3) {
+          window._bandwidth.outMessages.push({
+            t: new Date().getTime(),
+            m: [arguments[0], arguments[1], arguments[2]]
+          })
+          window._bandwidth.outgoing =
+            window._bandwidth.outgoing + arguments[0].length + arguments[1].length + arguments[2].length
+        } else if (arguments.length === 2) {
+          window._bandwidth.outgoing = window._bandwidth.outgoing + arguments[0].length + arguments[1].length
+        }
         if (i.Module.SendMessage) return i.Module.SendMessage.apply(i.Module, arguments)
       },
       Quit: function (e) {
