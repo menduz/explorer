@@ -7,13 +7,15 @@ import { rendererSaga } from '../renderer/sagas'
 import { metricSaga } from './metricSaga'
 import { daoSaga } from '../dao/sagas'
 import { metaSaga } from '../meta/sagas'
+import { chatSaga } from '../chat/sagas'
 
 export function createRootSaga() {
   return function* rootSaga() {
     yield fork(metaSaga)
+    yield fork(profileSaga)
+    yield fork(chatSaga)
     yield fork(atlasSaga)
     yield fork(daoSaga)
-    yield fork(profileSaga)
     yield fork(rendererSaga)
     yield fork(rootProtocolSaga)
     yield fork(metricSaga)

@@ -1,9 +1,8 @@
-using DCL;
+﻿using DCL;
 using DCL.Controllers;
 using DCL.Helpers;
 using DCL.Models;
 using Newtonsoft.Json;
-using System;
 using System.Collections;
 using System.Reflection;
 using UnityEngine;
@@ -52,6 +51,13 @@ public class TestsBase
         PoolManager.i?.Cleanup();
         PointerEventsController.i?.Cleanup();
 
+        if (DCLCharacterController.i != null)
+        {
+            DCLCharacterController.i.ResumeGravity();
+            DCLCharacterController.i.enabled = true;
+            DCLCharacterController.i.characterController.enabled = true;
+        }
+
         Caching.ClearCache();
         Resources.UnloadUnusedAssets();
 
@@ -77,6 +83,9 @@ public class TestsBase
             yield return SceneManager.LoadSceneAsync(sceneName);
             SceneManager.SetActiveScene(SceneManager.GetSceneByName(sceneName));
         }
+
+        yield return null;
+        CommonScriptableObjects.rendererState.Set(true);
     }
 
     public void SetUp_TestScene()
@@ -93,6 +102,7 @@ public class TestsBase
 
         yield return null;
         Assert.IsTrue(DCLCharacterController.i != null);
+        DCLCharacterController.i.gameObject.SetActive(true);
         DCLCharacterController.i.characterController.enabled = true;
     }
 
@@ -167,7 +177,7 @@ public class TestsBase
         yield break;
     }
 
-    public static T Reflection_GetStaticField<T>(Type baseType, string fieldName)
+    public static T Reflection_GetStaticField<T>(System.Type baseType, string fieldName)
     {
         return (T)baseType.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
     }

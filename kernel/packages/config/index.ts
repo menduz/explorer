@@ -1,5 +1,6 @@
 import { getUserProfile } from 'shared/comms/peers'
 import { tutorialStepId } from '../decentraland-loader/lifecycle/tutorial/tutorial'
+import { contracts as contractInfo } from './contracts'
 const queryString = require('query-string')
 declare var window: any
 
@@ -94,6 +95,7 @@ export const STATIC_WORLD = location.search.indexOf('STATIC_WORLD') !== -1 || !!
 // Development
 export const ENABLE_WEB3 = location.search.indexOf('ENABLE_WEB3') !== -1 || !!(global as any).enableWeb3
 export const ENV_OVERRIDE = location.search.indexOf('ENV') !== -1
+export const USE_NEW_CHAT = location.search.indexOf('USE_OLD_CHAT') === -1
 
 const qs = queryString.parse(location.search)
 
@@ -122,6 +124,7 @@ export const DEBUG_MESSAGES = location.search.indexOf('DEBUG_MESSAGES') !== -1
 export const DEBUG_WS_MESSAGES = location.search.indexOf('DEBUG_WS_MESSAGES') !== -1
 export const DEBUG_REDUX = location.search.indexOf('DEBUG_REDUX') !== -1
 export const DEBUG_LOGIN = location.search.indexOf('DEBUG_LOGIN') !== -1
+export const DEBUG_PM = location.search.indexOf('DEBUG_PM') !== -1
 
 export const AWS = location.search.indexOf('AWS') !== -1
 export const NO_MOTD = location.search.indexOf('NO_MOTD') !== -1
@@ -131,12 +134,14 @@ export const ENGINE_DEBUG_PANEL = location.search.indexOf('ENGINE_DEBUG_PANEL') 
 export const SCENE_DEBUG_PANEL = location.search.indexOf('SCENE_DEBUG_PANEL') !== -1 && !ENGINE_DEBUG_PANEL
 export const SHOW_FPS_COUNTER = location.search.indexOf('SHOW_FPS_COUNTER') !== -1 || DEBUG
 export const RESET_TUTORIAL = location.search.indexOf('RESET_TUTORIAL') !== -1
-export const NO_TUTORIAL = location.search.indexOf('NO_TUTORIAL') !== -1
+export const NO_TUTORIAL = true
+export const HAS_INITIAL_POSITION_MARK = location.search.indexOf('position') !== -1
 
 export function tutorialEnabled() {
   return (
     !NO_TUTORIAL &&
     WORLD_EXPLORER &&
+    !HAS_INITIAL_POSITION_MARK &&
     (RESET_TUTORIAL || getUserProfile().profile.tutorialStep !== tutorialStepId.FINISHED)
   )
 }
@@ -249,12 +254,16 @@ export function getWearablesSafeURL() {
 
 export function getServerConfigurations() {
   const TLDDefault = getDefaultTLD()
+
+  const synapseUrl = TLDDefault === 'zone' ? `https://matrix.decentraland.zone` : `https://decentraland.modular.im`
+
   return {
     contentAsBundle: `https://content-assets-as-bundle.decentraland.org`,
     wearablesApi: `https://wearable-api.decentraland.org/v2`,
     explorerConfiguration: `https://explorer-config.decentraland.${
       TLDDefault === 'today' ? 'org' : TLDDefault
     }/configuration.json`,
+    synapseUrl,
     avatar: {
       snapshotStorage: `https://avatars-storage.decentraland.${TLDDefault}/`,
       catalog: getExclusiveServer(),
@@ -265,8 +274,7 @@ export function getServerConfigurations() {
 
 export async function setNetwork(net: ETHEREUM_NETWORK) {
   try {
-    const response = await fetch('https://contracts.decentraland.org/addresses.json')
-    const json = await response.json()
+    const json = contractInfo
 
     network = net
     contracts = json[net]

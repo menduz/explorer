@@ -7,9 +7,14 @@ import { worldToGrid, gridToWorld } from '../../../atomicHelpers/parcelScenePosi
 import { pickWorldSpawnpoint } from 'shared/world/positionThings'
 import { InstancedSpawnPoint } from 'shared/types'
 import { isTutorial, resolveTutorialPosition } from '../tutorial/tutorial'
+import { createLogger } from 'shared/logger'
+
+const DEBUG = false
+
+const logger = createLogger('position: ')
 
 export class PositionLifecycleController extends EventEmitter {
-  private positionSettled: boolean = false
+  private positionSettled: boolean = true
   private currentlySightedScenes: string[] = []
   private currentSpawnpoint?: InstancedSpawnPoint
   private currentPosition: Vector2Component | null = null
@@ -32,8 +37,20 @@ export class PositionLifecycleController extends EventEmitter {
   }
 
   private async doReportCurrentPosition(position: Vector2Component, teleported: boolean) {
-    if (this.currentPosition && this.currentPosition.x === position.x && this.currentPosition.y === position.y) {
+    if (
+      !this.positionSettled ||
+      (this.currentPosition &&
+        this.currentPosition.x === position.x &&
+        this.currentPosition.y === position.y &&
+        !teleported)
+    ) {
       return
+    }
+
+    // first thing to do in case of teleport -> unsettle position & notify to avoid concurrent updates
+    if (teleported) {
+      this.positionSettled = false
+      this.emit('Unsettled Position')
     }
 
     let resolvedPosition = position
@@ -44,7 +61,10 @@ export class PositionLifecycleController extends EventEmitter {
       if (land) {
         const spawnPoint = pickWorldSpawnpoint(land)
         resolvedPosition = worldToGrid(spawnPoint.position)
-        this.queueTrackingEvent('Scene Spawn', { parcel: land.scene.scene.base, spawnpoint: spawnPoint.position })
+        this.queueTrackingEvent('Scene Spawn', {
+          parcel: land.sceneJsonData.scene.base,
+          spawnpoint: spawnPoint.position
+        })
 
         this.currentSpawnpoint = spawnPoint
       } else {
@@ -59,11 +79,6 @@ export class PositionLifecycleController extends EventEmitter {
       if (!this.eqSet(this.currentlySightedScenes, newlySightedScenes.sighted)) {
         this.currentlySightedScenes = newlySightedScenes.sighted
       }
-    }
-
-    if (teleported) {
-      this.positionSettled = false
-      this.emit('Unsettled Position')
     }
 
     this.checkPositionSettlement()
@@ -84,8 +99,12 @@ export class PositionLifecycleController extends EventEmitter {
     if (!this.positionSettled) {
       const settling = this.currentlySightedScenes.every($ => this.sceneController.isRenderable($))
 
+      DEBUG &&
+        logger.info(`remaining-scenes`, this.currentlySightedScenes.filter($ => !this.sceneController.isRenderable($)))
       if (settling) {
         this.positionSettled = settling
+
+        DEBUG && logger.info(`settled-position-triggered`, this.currentPosition)
         this.emit('Settled Position', this.currentSpawnpoint)
       }
     }

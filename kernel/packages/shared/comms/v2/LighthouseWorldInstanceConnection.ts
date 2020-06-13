@@ -4,15 +4,17 @@ import { Package, BusMessage, ChatMessage, ProfileVersion, UserInformation, Pack
 import { Position, positionHash } from '../interface/utils'
 import defaultLogger, { createLogger } from 'shared/logger'
 import { PeerMessageTypes, PeerMessageType } from 'decentraland-katalyst-peer/src/messageTypes'
-import { Peer as PeerType, PacketCallback } from 'decentraland-katalyst-peer/src/Peer'
+import { Peer as PeerType } from 'decentraland-katalyst-peer/src/Peer'
+import { PacketCallback } from 'decentraland-katalyst-peer/src/types'
 import { ChatData, CommsMessage, ProfileData, SceneData, PositionData } from './proto/comms_pb'
 import { Realm, CommsStatus } from 'shared/dao/types'
+import { compareVersions } from 'atomicHelpers/semverCompare'
 
 import * as Long from 'long'
 declare const window: any
 window.Long = Long
 
-const { Peer } = require('decentraland-katalyst-peer')
+const { Peer, buildCatalystPeerStatsData } = require('decentraland-katalyst-peer')
 
 const NOOP = () => {
   // do nothing
@@ -45,6 +47,8 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
 
   private peer: PeerType
 
+  private rooms: string[] = []
+
   constructor(
     private peerId: string,
     private realm: Realm,
@@ -73,9 +77,7 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
 
   public async changeRealm(realm: Realm, url: string) {
     this.statusHandler({ status: 'connecting', connectedPeers: this.connectedPeersCount() })
-    let rooms: string[] = []
     if (this.peer) {
-      rooms = this.peer.currentRooms.map(it => it.id)
       await this.cleanUpPeer()
     }
 
@@ -84,7 +86,7 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
 
     this.initializePeer()
     await this.connectPeer()
-    await this.updateSubscriptions(rooms)
+    await this.syncRoomsWithPeer()
   }
 
   printDebugInformation() {
@@ -96,13 +98,8 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
   }
 
   analyticsData() {
-    // For now, these are private. Next version of peer library will make them public
     return {
-      // We slice the id in order to reduce the potential event size. Eventually, we should slice all comms ids
-      // @ts-ignore
-      connectedPeers: this.peer.fullyConnectedPeerIds().map(it => it.slice(-6)),
-      // @ts-ignore
-      stats: this.peer.stats
+      stats: buildCatalystPeerStatsData(this.peer)
     }
   }
 
@@ -151,8 +148,13 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
   }
 
   async updateSubscriptions(rooms: string[]) {
+    this.rooms = rooms
+    await this.syncRoomsWithPeer()
+  }
+
+  private async syncRoomsWithPeer() {
     const currentRooms = this.peer.currentRooms
-    const joining = rooms.map(room => {
+    const joining = this.rooms.map(room => {
       if (!currentRooms.some(current => current.id === room)) {
         return this.peer.joinRoom(room)
       } else {
@@ -160,7 +162,7 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
       }
     })
     const leaving = currentRooms.map(current => {
-      if (!rooms.some(room => current.id === room)) {
+      if (!this.rooms.some(room => current.id === room)) {
         return this.peer.leaveRoom(current.id)
       } else {
         return Promise.resolve()
@@ -209,7 +211,10 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
       }
     }
 
-    return new Peer(this.lighthouseUrl, this.peerId, this.peerCallback, this.peerConfig)
+    // We require a version greater than 0.1 to not send an ID
+    const idToUse = compareVersions('0.1', this.realm.lighthouseVersion) === -1 ? undefined : this.peerId
+
+    return new Peer(this.lighthouseUrl, idToUse, this.peerCallback, this.peerConfig)
   }
 
   private async cleanUpPeer() {

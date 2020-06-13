@@ -25,9 +25,9 @@ TagManager:
   - CharacterPreview
   - CharacterController
   - CharacterOnly
-  - 
-  - 
-  - 
+  - NavmapChunk
+  - FriendsHUDPlayerMenu
+  - PlayerInfoCardMenu
   - 
   - 
   - 

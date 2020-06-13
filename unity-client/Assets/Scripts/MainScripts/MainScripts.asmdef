@@ -21,7 +21,11 @@
         "InputController",
         "GenericPointers",
         "MaterialCachingHelper",
-        "SRPBatchingHelper"
+        "SRPBatchingHelper",
+        "MouseCatcher",
+        "Settings",
+        "WrappedTextureAsset",
+        "NFTHelper"
     ],
     "optionalUnityReferences": [],
     "includePlatforms": [],

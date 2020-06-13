@@ -1,11 +1,11 @@
 import { saveToLocalStorage } from 'atomicHelpers/localStorage'
-import { commConfigurations, parcelLimits, COMMS, AUTO_CHANGE_REALM } from 'config'
+import { commConfigurations, parcelLimits, COMMS, AUTO_CHANGE_REALM, USE_NEW_CHAT } from 'config'
 import { CommunicationsController } from 'shared/apis/CommunicationsController'
 import { defaultLogger } from 'shared/logger'
-import { MessageEntry } from 'shared/types'
+import { ChatMessage as InternalChatMessage, ChatMessageType, MessageEntry } from 'shared/types'
 import { positionObservable, PositionReport } from 'shared/world/positionThings'
 import { ProfileAsPromise } from '../profiles/ProfileAsPromise'
-import { ChatEvent, chatObservable, notifyStatusThroughChat } from './chat'
+import { notifyStatusThroughChat, chatObservable, ChatEventType } from './chat'
 import { CliBrokerConnection } from './CliBrokerConnection'
 import { Stats } from './debug'
 import { IBrokerConnection } from '../comms/v1/IBrokerConnection'
@@ -67,6 +67,7 @@ import { getProfile } from 'shared/profiles/selectors'
 import { Profile } from 'shared/profiles/types'
 import { realmToString } from '../dao/utils/realmToString'
 import { queueTrackingEvent } from 'shared/analytics'
+import { messageReceived } from '../chat/actions'
 
 export type CommsVersion = 'v1' | 'v2'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -285,14 +286,26 @@ export function processChatMessage(context: Context, fromAlias: string, message:
           timestamp: parseInt(timestamp, 10)
         })
       } else {
-        const entry: MessageEntry = {
-          id: msgId,
-          sender: displayName || 'unknown',
-          message: text,
-          isCommand: false
-        }
         if (profile && user.userId && !isBlocked(profile, user.userId)) {
-          chatObservable.notifyObservers({ type: ChatEvent.MESSAGE_RECEIVED, messageEntry: entry })
+          if (USE_NEW_CHAT) {
+            const messageEntry: InternalChatMessage = {
+              messageType: ChatMessageType.PUBLIC,
+              messageId: msgId,
+              sender: displayName || 'unknown',
+              body: text,
+              timestamp: message.time
+            }
+            globalThis.globalStore.dispatch(messageReceived(messageEntry))
+          } else {
+            const messageEntry: MessageEntry = {
+              id: msgId,
+              sender: displayName || 'unknown',
+              isCommand: false,
+              message: text,
+              timestamp: message.time
+            }
+            chatObservable.notifyObservers({ type: ChatEventType.MESSAGE_RECEIVED, messageEntry })
+          }
         }
       }
     }
@@ -306,7 +319,7 @@ function isBlocked(profile: Profile, userId: string): boolean {
 export function processProfileMessage(
   context: Context,
   fromAlias: string,
-  identity: string,
+  peerIdentity: string,
   message: Package<ProfileVersion>
 ) {
   const msgTimestamp = message.time
@@ -314,14 +327,38 @@ export function processProfileMessage(
   const peerTrackingInfo = ensurePeerTrackingInfo(context, fromAlias)
 
   if (msgTimestamp > peerTrackingInfo.lastProfileUpdate) {
-    const profileVersion = message.data.version
-
-    peerTrackingInfo.identity = identity
-    peerTrackingInfo.loadProfileIfNecessary(profileVersion ? parseInt(profileVersion, 10) : 0)
-
     peerTrackingInfo.lastProfileUpdate = msgTimestamp
+    peerTrackingInfo.identity = peerIdentity
     peerTrackingInfo.lastUpdate = Date.now()
+
+    if (ensureTrackingUniqueAndLatest(context, fromAlias, peerIdentity, msgTimestamp)) {
+      const profileVersion = message.data.version
+      peerTrackingInfo.loadProfileIfNecessary(profileVersion ? parseInt(profileVersion, 10) : 0)
+    }
   }
+}
+
+/**
+ * Ensures that there is only one peer tracking info for this identity.
+ * Returns true if this is the latest update and the one that remains
+ */
+function ensureTrackingUniqueAndLatest(context: Context, fromAlias: string, peerIdentity: string, thisUpdateTimestamp: Timestamp) {
+  let currentLastProfileAlias = fromAlias
+  let currentLastProfileUpdate = thisUpdateTimestamp
+
+  context.peerData.forEach((info, key) => {
+    if (info.identity === peerIdentity) {
+      if (info.lastProfileUpdate < currentLastProfileUpdate) {
+        removePeer(context, key)
+      } else if (info.lastProfileUpdate > currentLastProfileUpdate) {
+        removePeer(context, currentLastProfileAlias)
+        currentLastProfileAlias = key
+        currentLastProfileUpdate = info.lastProfileUpdate
+      }
+    }
+  })
+
+  return currentLastProfileAlias === fromAlias
 }
 
 export function processPositionMessage(context: Context, fromAlias: string, message: Package<Position>) {
@@ -427,6 +464,12 @@ function collectInfo(context: Context) {
     if (msSinceLastUpdate > commConfigurations.peerTtlMs) {
       removePeer(context, peerAlias)
 
+      continue
+    }
+
+    if (trackingInfo.identity === identity.address) {
+      // If we are tracking a peer that is ourselves, we remove it
+      removePeer(context, peerAlias)
       continue
     }
 
@@ -681,7 +724,7 @@ export async function connect(userId: string) {
         connectionAnalytics.visiblePeers = context?.stats.visiblePeerIds.map(it => it.slice(-6))
 
         if (connectionAnalytics) {
-          queueTrackingEvent('Comms status', connectionAnalytics)
+          queueTrackingEvent('Comms Status v2', connectionAnalytics)
         }
       }, 30000)
     }

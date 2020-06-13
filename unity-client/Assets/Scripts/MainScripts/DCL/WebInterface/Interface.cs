@@ -148,6 +148,13 @@ namespace DCL.Interface
         [System.Serializable]
         public class OnClickEventPayload
         {
+            public ACTION_BUTTON buttonId = ACTION_BUTTON.POINTER;
+        }
+
+        [System.Serializable]
+        public class SendChatMessageEvent
+        {
+            public ChatMessage message;
         }
 
 
@@ -379,6 +386,13 @@ namespace DCL.Interface
             public float volume;
         }
 
+        [System.Serializable]
+        public class JumpInPayload
+        {
+            public FriendsController.UserStatus.Realm realm = new FriendsController.UserStatus.Realm();
+            public Vector2 gridPosition;
+        }
+
 #if UNITY_WEBGL && !UNITY_EDITOR
     /**
      * This method is called after the first render. It marks the loading of the
@@ -438,7 +452,9 @@ namespace DCL.Interface
         private static OnGlobalPointerEventPayload onGlobalPointerEventPayload = new OnGlobalPointerEventPayload();
         private static OnGlobalPointerEvent onGlobalPointerEvent = new OnGlobalPointerEvent();
         private static AudioStreamingPayload onAudioStreamingEvent = new AudioStreamingPayload();
+        private static JumpInPayload jumpInPayload = new JumpInPayload();
         private static GotoEvent gotoEvent = new GotoEvent();
+        private static SendChatMessageEvent sendChatMessageEvent = new SendChatMessageEvent();
 
         public static void SendSceneEvent<T>(string sceneId, string eventType, T payload)
         {
@@ -768,7 +784,7 @@ namespace DCL.Interface
             });
         }
 
-        public static void SendUnlockPlayer(string userId)
+        public static void SendUnblockPlayer(string userId)
         {
             SendMessage("UnblockPlayer", new SendUnblockPlayerPayload()
             {
@@ -800,11 +816,34 @@ namespace DCL.Interface
             onAudioStreamingEvent.volume = volume;
             SendMessage("SetAudioStream", onAudioStreamingEvent);
         }
+
         public static void GoTo(int x, int y)
         {
             gotoEvent.x = x;
             gotoEvent.y = y;
             SendMessage("GoTo", gotoEvent);
+        }
+
+        public static void JumpIn(int x, int y, string serverName, string layerName)
+        {
+            jumpInPayload.realm.serverName = serverName;
+            jumpInPayload.realm.layer = layerName;
+
+            jumpInPayload.gridPosition.x = x;
+            jumpInPayload.gridPosition.y = y;
+
+            SendMessage("JumpIn", jumpInPayload);
+        }
+
+        public static void SendChatMessage(ChatMessage message)
+        {
+            sendChatMessageEvent.message = message;
+            SendMessage("SendChatMessage", sendChatMessageEvent);
+        }
+
+        public static void UpdateFriendshipStatus(FriendsController.FriendshipUpdateStatusMessage message)
+        {
+            SendMessage("UpdateFriendshipStatus", message);
         }
     }
 }

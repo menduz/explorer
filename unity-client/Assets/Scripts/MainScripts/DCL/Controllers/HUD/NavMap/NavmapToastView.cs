@@ -13,64 +13,129 @@ namespace DCL
         [SerializeField] internal TextMeshProUGUI sceneOwnerText;
         [SerializeField] internal TextMeshProUGUI sceneLocationText;
         [SerializeField] internal TextMeshProUGUI sceneDescriptionText;
+        [SerializeField] internal RectTransform toastContainer;
         [SerializeField] internal Image scenePreviewImage;
 
         [SerializeField] internal Button goToButton;
         [SerializeField] internal Button closeButton;
-
         Vector2Int location;
+        RectTransform rectTransform;
+        MinimapMetadata minimapMetadata;
+
+        public System.Action OnGotoClicked;
+
+        public bool isOpen
+        {
+            get { return gameObject.activeInHierarchy; }
+        }
 
         private void Awake()
         {
+            minimapMetadata = MinimapMetadata.GetMetadata();
+            rectTransform = transform as RectTransform;
+
             goToButton.onClick.AddListener(OnGotoClick);
             closeButton.onClick.AddListener(OnCloseClick);
+
+            minimapMetadata.OnSceneInfoUpdated += OnMapMetadataInfoUpdated;
+        }
+
+        private void OnDestroy()
+        {
+            minimapMetadata.OnSceneInfoUpdated -= OnMapMetadataInfoUpdated;
         }
 
         public void Populate(Vector2Int coordinates, MinimapMetadata.MinimapSceneInfo sceneInfo)
         {
-            if (sceneInfo == null)
-            {
-                gameObject.SetActive(false);
-                return;
-            }
+            bool sceneInfoExists = sceneInfo != null;
 
-            sceneOwnerText.gameObject.SetActive(!string.IsNullOrEmpty(sceneInfo.owner));
-            sceneDescriptionText.gameObject.SetActive(!string.IsNullOrEmpty(sceneInfo.description));
-            scenePreviewImage.gameObject.SetActive(!string.IsNullOrEmpty(sceneInfo.previewImageUrl));
-            sceneLocationText.text = $"{coordinates.x}, {coordinates.y}";
-
-            sceneTitleText.text = sceneInfo.name;
-            sceneOwnerText.text = $"Created by: {sceneInfo.owner}";
-            sceneDescriptionText.text = sceneInfo.description;
-
-            location = coordinates;
+            MapRenderer.i.showCursorCoords = false;
 
             gameObject.SetActive(true);
+            location = coordinates;
 
-            if (currentImageUrl == sceneInfo.previewImageUrl)
-                return;
+            PositionToast(coordinates);
 
-            if (currentImage != null)
-                Destroy(currentImage);
+            sceneLocationText.text = $"{coordinates.x}, {coordinates.y}";
 
-            if (downloadCoroutine != null)
-                CoroutineStarter.Stop(downloadCoroutine);
+            sceneOwnerText.transform.parent.gameObject.SetActive(sceneInfoExists && !string.IsNullOrEmpty(sceneInfo.owner));
+            sceneDescriptionText.transform.parent.gameObject.SetActive(sceneInfoExists && !string.IsNullOrEmpty(sceneInfo.description));
+            sceneTitleText.transform.parent.gameObject.SetActive(sceneInfoExists && !string.IsNullOrEmpty(sceneInfo.name));
+            scenePreviewImage.gameObject.SetActive(sceneInfoExists && !string.IsNullOrEmpty(sceneInfo.previewImageUrl));
 
-            if (!string.IsNullOrEmpty(sceneInfo.previewImageUrl))
-                downloadCoroutine = CoroutineStarter.Start(Download(sceneInfo.previewImageUrl));
+            if (sceneInfoExists)
+            {
+                sceneTitleText.text = sceneInfo.name;
+                sceneOwnerText.text = $"Created by: {sceneInfo.owner}";
+                sceneDescriptionText.text = sceneInfo.description;
 
-            currentImageUrl = sceneInfo.previewImageUrl;
+                if (currentImageUrl == sceneInfo.previewImageUrl) return;
+
+                if (currentImage != null)
+                    Destroy(currentImage);
+
+                if (downloadCoroutine != null)
+                    CoroutineStarter.Stop(downloadCoroutine);
+
+                if (sceneInfoExists && !string.IsNullOrEmpty(sceneInfo.previewImageUrl))
+                    downloadCoroutine = CoroutineStarter.Start(Download(sceneInfo.previewImageUrl));
+
+                currentImageUrl = sceneInfoExists ? sceneInfo.previewImageUrl : "";
+            }
         }
 
-        private void OnCloseClick()
+        public void OnMapMetadataInfoUpdated(MinimapMetadata.MinimapSceneInfo sceneInfo)
         {
+            if (!isOpen) return;
+
+            bool updatedCurrentLocationInfo = false;
+            foreach (Vector2Int parcel in sceneInfo.parcels)
+            {
+                if (parcel == location)
+                {
+                    updatedCurrentLocationInfo = true;
+                    break;
+                }
+            }
+
+            if (updatedCurrentLocationInfo)
+                Populate(location, sceneInfo);
+        }
+
+        void PositionToast(Vector2Int coordinates)
+        {
+            if (toastContainer == null || rectTransform == null) return;
+
+            // position the toast over the parcel parcelHighlightImage so that we can easily check with LOCAL pos info where it is on the screen
+            toastContainer.position = MapRenderer.i.parcelHighlightImage.transform.position;
+
+            bool useBottom = toastContainer.localPosition.y > 0;
+
+            bool shouldOffsetHorizontally = Mathf.Abs(toastContainer.localPosition.x) > rectTransform.rect.width / 4;
+            bool useLeft = false;
+
+            if (shouldOffsetHorizontally)
+                useLeft = toastContainer.localPosition.x > 0;
+
+            // By setting the pivot accordingly BEFORE we position the toast, we can have it always visible in an easier way
+            toastContainer.pivot = new Vector2(shouldOffsetHorizontally ? (useLeft ? 1 : 0) : 0.5f, useBottom ? 1 : 0);
+            toastContainer.position = MapRenderer.i.parcelHighlightImage.transform.position;
+
+        }
+
+        public void OnCloseClick()
+        {
+            MapRenderer.i.showCursorCoords = true;
             gameObject.SetActive(false);
         }
 
         private void OnGotoClick()
         {
+            OnGotoClicked?.Invoke();
+
             WebInterface.GoTo(location.x, location.y);
 
+            OnCloseClick();
         }
 
         string currentImageUrl;

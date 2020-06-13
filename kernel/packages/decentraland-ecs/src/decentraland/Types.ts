@@ -24,6 +24,12 @@ export type DecentralandInterface = {
   /** error function */
   error(message: string, data?: any): void
 
+  /** open external url */
+  openExternalUrl(url: string): void
+
+  /** open nft info dialog */
+  openNFTDialog(assetContractAddress: string, tokenId: string, comment: string | null): void
+
   // LIFECYCLE
 
   /** update tick */
@@ -425,6 +431,9 @@ export type ProfileForRenderer = {
  */
 export type MinimapSceneInfo = {
   name: string
+  owner: string
+  description: string
+  previewImageUrl: string | undefined
   type: number
   parcels: { x: number; y: number }[]
   isPOI: boolean

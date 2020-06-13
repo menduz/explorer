@@ -10,6 +10,8 @@ namespace DCL
     {
         public static PointerEventsController i { get; private set; }
 
+        public InteractionHoverCanvasController interactionHoverCanvasController;
+
         private static bool renderingIsDisabled => !CommonScriptableObjects.rendererState.Get();
         public static System.Action OnPointerHoverStarts;
         public static System.Action OnPointerHoverEnds;
@@ -70,14 +72,14 @@ namespace DCL
                 return;
             }
 
-            if (!CollidersManager.i.GetColliderInfo(hitInfo.collider, out ColliderInfo info))
-                newHoveredEvent = hitInfo.collider.GetComponentInChildren<OnPointerEvent>();
-            else
+            if (CollidersManager.i.GetColliderInfo(hitInfo.collider, out ColliderInfo info))
                 newHoveredEvent = info.entity.gameObject.GetComponentInChildren<OnPointerEvent>();
+            else
+                newHoveredEvent = hitInfo.collider.GetComponentInChildren<OnPointerEvent>();
 
             clickHandler = null;
 
-            if (newHoveredEvent == null || !newHoveredEvent.IsAtHoverDistance(DCLCharacterController.i.transform))
+            if (!EventObjectCanBeHovered(newHoveredEvent, info))
             {
                 UnhoverLastHoveredObject();
                 return;
@@ -116,6 +118,11 @@ namespace DCL
             newHoveredEvent = null;
         }
 
+        private bool EventObjectCanBeHovered(OnPointerEvent targetEvent, ColliderInfo colliderInfo)
+        {
+            return newHoveredEvent != null && newHoveredEvent.IsAtHoverDistance(DCLCharacterController.i.transform) && (IsAvatarPointerEvent(newHoveredEvent) || (newHoveredEvent.IsVisible() && AreSameEntity(newHoveredEvent, colliderInfo)));
+        }
+
         private void ResolveGenericRaycastHandlers(IRaycastPointerHandler raycastHandlerTarget)
         {
             if (Utils.LockedThisFrame()) return;
@@ -150,7 +157,11 @@ namespace DCL
 
         void UnhoverLastHoveredObject()
         {
-            if (lastHoveredObject == null) return;
+            if (lastHoveredObject == null)
+            {
+                interactionHoverCanvasController.SetHoverState(false);
+                return;
+            }
 
             OnPointerHoverEnds?.Invoke();
 
@@ -294,9 +305,17 @@ namespace DCL
                 else
                     hitGameObject = collider.gameObject;
 
-                hitGameObject.GetComponentInChildren<OnClick>()?.Report(buttonId, raycastInfoPointerEventLayer.hitInfo.hit);
-                hitGameObject.GetComponentInChildren<OnPointerDown>()?.Report(buttonId, ray, raycastInfoPointerEventLayer.hitInfo.hit);
+                OnClick onClick = hitGameObject.GetComponentInChildren<OnClick>();
+                if (AreSameEntity(onClick, info))
+                    onClick.Report(buttonId, raycastInfoPointerEventLayer.hitInfo.hit);
+
+                OnPointerDown onPointerDown = hitGameObject.GetComponentInChildren<OnPointerDown>();
+                if (IsAvatarPointerEvent(onPointerDown) || AreSameEntity(onPointerDown, info))
+                    onPointerDown.Report(buttonId, ray, raycastInfoPointerEventLayer.hitInfo.hit);
+
                 pointerUpEvent = hitGameObject.GetComponentInChildren<OnPointerUp>();
+                if (!AreSameEntity(pointerUpEvent, info))
+                    pointerUpEvent = null;
 
                 lastPointerDownEventHitInfo = raycastInfoPointerEventLayer.hitInfo;
             }
@@ -322,6 +341,16 @@ namespace DCL
             {
                 WebInterface.ReportGlobalPointerDownEvent(buttonId, raycastInfoGlobalLayer.ray, Vector3.zero, Vector3.zero, 0, sceneId);
             }
+        }
+
+        bool IsAvatarPointerEvent(OnPointerEvent targetPointerEvent)
+        {
+            return targetPointerEvent != null && targetPointerEvent is AvatarOnPointerDown;
+        }
+
+        bool AreSameEntity(OnPointerEvent pointerEvent, ColliderInfo colliderInfo)
+        {
+            return pointerEvent != null && colliderInfo.entity != null && pointerEvent.entity == colliderInfo.entity;
         }
 
         bool IsBlockingOnClick(RaycastHitInfo targetOnClickHit, RaycastHitInfo potentialBlockerHit)

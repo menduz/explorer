@@ -38,6 +38,8 @@ namespace DCL.Models
 
         CIRCLE_SHAPE = 31,
 
+        FONT = 34,
+
         UI_FULLSCREEN_SHAPE = 40,
         UI_BUTTON_SHAPE = 41,
 
@@ -49,6 +51,9 @@ namespace DCL.Models
         HIGHLIGHT_ENTITY = 66,
 
         TEXTURE = 68,
+
+        VIDEO_CLIP = 70,
+        VIDEO_TEXTURE = 71,
 
         AUDIO_CLIP = 200
     }
